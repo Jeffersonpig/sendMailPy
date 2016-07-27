@@ -35,14 +35,11 @@ def loadSenderConfig(configfile):
     config = configparser.ConfigParser()
     config.read(configfile)
     for section in config.sections():
-        if section == 'global':
-            continue
-        else:
-            cdic = config[section]
-            sender = {'type': cdic['server_type'], 'host': cdic['server_host'], 'port': cdic['server_port'],
-                      'auth': cdic['server_auth'], 'addr': cdic['sender_addr'], 'pass': cdic['sender_passwd'],
-                      'max': cdic['day_max']}
-            senders.append(sender)
+        cdic = config[section]
+        sender = {'type': cdic['server_type'], 'host': cdic['server_host'], 'port': cdic['server_port'],
+                  'auth': cdic['server_auth'], 'addr': cdic['sender_addr'], 'pass': cdic['sender_passwd'],
+                  'max': cdic['day_max']}
+        senders.append(sender)
     print(len(senders), "Sender Config Read")
     return senders
 
@@ -52,14 +49,15 @@ def loadGlobalConfig(configfile):
     config.read(configfile)
     if 'global' in config.sections():
         g = config['global']
-        gcfg = {'subject': g['mail_subject'], 'text': g['mail_text'], 'attach': g['mail_attach'], 'csv': g['csv_file']}
+        gcfg = {'subject': g['mail_subject'], 'text': g['mail_text'], 'attach': g['mail_attach'], 'csv': g['target_csv'],
+                'senders': g['sender_config']}
         return gcfg
     else:
         raise InvalidConfigException("No 'global' section!")
 
 
 def logFailedAddress(addrs):
-    with open('failed.txt', 'a') as log:
+    with open('failed.log', 'a') as log:
         dt = datetime.now()
         log.write('\n------{0} [{1}]------\n'.format(dt, len(addrs)))
         log.write('\n'.join(addrs))
@@ -124,7 +122,7 @@ globalconfig = loadGlobalConfig('sendmail.ini')
 print(globalconfig)
 tolist = addrListFromCSV(globalconfig['csv'], 0)
 print(tolist)
-senders = loadSenderConfig('sendmail.ini')
+senders = loadSenderConfig(globalconfig['senders'])
 print(senders)
 for sender in senders:
     sendMail(sender, tolist, globalconfig['subject'], globalconfig['text'], globalconfig['attach'])
